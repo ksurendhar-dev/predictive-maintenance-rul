@@ -10,7 +10,6 @@ import { WorkOrders } from './pages/WorkOrders';
 import { TelemetryTrends } from './pages/TelemetryTrends';
 import { WorkOrderModal } from './components/WorkOrderModal';
 import { AnomalyExplainModal } from './components/AnomalyExplainModal';
-import { SimulationCockpit } from './components/SimulationCockpit';
 import { api } from './services/api';
 
 export default function App() {
@@ -193,12 +192,6 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Dark Minimal Simulation Cockpit Bar */}
-      <SimulationCockpit 
-        onTriggerScenario={handleTriggerScenario}
-        isConnected={isConnected}
-      />
-
       <Sidebar 
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -229,6 +222,8 @@ export default function App() {
               onExplainAlert={alert => setAlertForExplanation(alert)}
               onOpenWorkOrderModal={openWorkOrderWithMachine}
               onResolveAlert={handleResolveAlert}
+              onTriggerScenario={handleTriggerScenario}
+              isConnected={isConnected}
             />
           )}
 

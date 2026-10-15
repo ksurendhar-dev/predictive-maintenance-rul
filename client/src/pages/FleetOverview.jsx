@@ -3,6 +3,7 @@ import { Cpu, AlertTriangle, Hourglass, Wrench, Activity, ChevronRight, Check, W
 import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
 import { VibrationWaveChart } from '../components/VibrationWaveChart';
+import { SimulationCockpit } from '../components/SimulationCockpit';
 
 export const FleetOverview = ({ 
   overview, 
@@ -11,7 +12,9 @@ export const FleetOverview = ({
   telemetryStream = {},
   onExplainAlert, 
   onOpenWorkOrderModal,
-  onResolveAlert 
+  onResolveAlert,
+  onTriggerScenario,
+  isConnected = true
 }) => {
   const [selectedMachineId, setSelectedMachineId] = useState(null);
 
@@ -67,18 +70,39 @@ export const FleetOverview = ({
         />
       </div>
 
-      {/* 2. Critical Anomaly Alerts Banner */}
-      {openAlerts.length > 0 && (
-        <div className="panel" style={{ borderColor: '#fca5a5', flexShrink: 0 }}>
-          <div className="panel-header" style={{ background: '#fef2f2' }}>
-            <div className="panel-title" style={{ color: '#b91c1c' }}>
-              <AlertTriangle size={18} />
-              <span>Equipment Alerts ({openAlerts.length})</span>
+      {/* 2. Equipment Alert System & Live Fault Simulator */}
+      <div className="panel" style={{ 
+        borderColor: openAlerts.length > 0 ? '#fca5a5' : 'var(--border-color)', 
+        flexShrink: 0,
+        boxShadow: openAlerts.length > 0 ? '0 4px 14px rgba(239, 68, 68, 0.08)' : 'none'
+      }}>
+        <div className="panel-header" style={{ 
+          background: openAlerts.length > 0 ? '#fef2f2' : '#f8fafc',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 12
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="panel-title" style={{ color: openAlerts.length > 0 ? '#b91c1c' : 'var(--text-color)', margin: 0 }}>
+              <AlertTriangle size={18} style={{ color: openAlerts.length > 0 ? '#dc2626' : '#64748b' }} />
+              <span>Equipment Alerts {openAlerts.length > 0 ? `(${openAlerts.length} Active)` : ''}</span>
             </div>
-            <span style={{ fontSize: '0.78rem', color: '#991b1b' }}>
-              Resolve warnings below or schedule repairs
+            <span className={`badge ${openAlerts.length > 0 ? 'badge-severe-anomaly' : 'badge-healthy'}`} style={{ fontSize: '0.72rem' }}>
+              {openAlerts.length > 0 ? 'ANOMALIES DETECTED' : 'ALL NOMINAL'}
             </span>
           </div>
+
+          {/* Embedded Simulation Cockpit Bar next to the alert system */}
+          <SimulationCockpit 
+            onTriggerScenario={onTriggerScenario} 
+            isConnected={isConnected} 
+            embedded={true} 
+          />
+        </div>
+
+        {openAlerts.length > 0 ? (
           <div className="table-responsive">
             <table className="data-table" style={{ width: '100%' }}>
               <thead>
@@ -142,8 +166,23 @@ export const FleetOverview = ({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        ) : (
+          <div style={{ 
+            padding: '14px 20px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            color: 'var(--text-muted)',
+            fontSize: '0.85rem',
+            background: '#ffffff'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#059669', fontWeight: 600 }}>✓ All {machines.length} machines operating within normal thresholds.</span>
+              <span style={{ fontSize: '0.8rem' }}>Use the simulation controls above to inject faults and verify predictive alerts in real time.</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 3. Real-Time Vibration Spline Wave Chart */}
       <VibrationWaveChart 
