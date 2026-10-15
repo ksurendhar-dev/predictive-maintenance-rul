@@ -30,32 +30,40 @@ const startTelemetrySimulator = (io) => {
           const seed = (m.machineId && typeof m.machineId === 'string')
             ? m.machineId.charCodeAt(m.machineId.length - 1)
             : 42;
-          const wave = Math.sin(simTick + seed);
-          const noise = (Math.random() - 0.5);
+          // Harmonic vibration cycle (fundamental + 2nd harmonic for realistic continuous mechanical wave)
+          const fundamental = Math.sin(simTick + seed);
+          const harmonic = Math.sin(2.1 * simTick + seed * 1.5) * 0.22;
+          const continuousWave = (fundamental * 0.78 + harmonic);
+          const microNoise = (Math.random() - 0.5) * 0.02; // Micro sensor flutter
 
-          let newVib = m.currentVibrationRms;
-          let newTemp = m.currentTempC;
-          let newPeakG = m.currentBearingPeakG;
-          let newRpm = 1800 + Math.round(wave * 25 + noise * 10);
-          let newAmps = 18.5 + +(wave * 1.2 + noise * 0.4).toFixed(1);
-          let newDb = 58 + Math.round(wave * 3 + noise * 2);
+          let newRpm = 1800 + Math.round(continuousWave * 15);
+          let newAmps = +(18.5 + continuousWave * 0.6).toFixed(1);
+          let newDb = 58 + Math.round(continuousWave * 2);
+          let newPeakG;
+          let newTemp;
+          let newVib;
 
           if (m.status === 'HEALTHY') {
-            newVib = +(1.8 + wave * 0.35 + noise * 0.15).toFixed(2);
+            newVib = +(1.8 + continuousWave * 0.28 + microNoise).toFixed(2);
             if (newVib < 0.8) newVib = 0.8;
-            newPeakG = +(0.85 + wave * 0.18 + noise * 0.08).toFixed(2);
-            newTemp = +(52.0 + wave * 1.5 + noise * 0.5).toFixed(1);
+            newPeakG = +(0.85 + continuousWave * 0.12).toFixed(2);
+            newTemp = +(52.0 + continuousWave * 1.0).toFixed(1);
           } else if (m.status === 'EARLY_DEGRADATION') {
-            newVib = +(3.8 + wave * 0.5 + noise * 0.25).toFixed(2);
-            newPeakG = +(2.1 + wave * 0.3 + noise * 0.1).toFixed(2);
-            newTemp = +(68.0 + wave * 2.0 + noise * 0.8).toFixed(1);
-            newDb = 72 + Math.round(wave * 4);
+            newVib = +(3.7 + continuousWave * 0.35 + microNoise).toFixed(2);
+            newPeakG = +(2.1 + continuousWave * 0.20).toFixed(2);
+            newTemp = +(68.0 + continuousWave * 1.5).toFixed(1);
+            newDb = 72 + Math.round(continuousWave * 3);
+          } else if (m.status === 'CRITICAL_SHUTDOWN') {
+            newVib = +(8.4 + continuousWave * 0.45 + microNoise).toFixed(2);
+            newPeakG = +(4.2 + continuousWave * 0.30).toFixed(2);
+            newTemp = +(83.0 + continuousWave * 1.8).toFixed(1);
+            newDb = 92 + Math.round(continuousWave * 4);
           } else {
-            newVib = +(m.currentVibrationRms + wave * 0.4 + noise * 0.2).toFixed(2);
-            if (newVib < 5.5) newVib = 5.5;
-            newPeakG = +(m.currentBearingPeakG + wave * 0.2 + noise * 0.1).toFixed(2);
-            newTemp = +(m.currentTempC + wave * 1.0 + noise * 0.3).toFixed(1);
-            newDb = 88 + Math.round(wave * 5);
+            // SEVERE_ANOMALY
+            newVib = +(6.2 + continuousWave * 0.40 + microNoise).toFixed(2);
+            newPeakG = +(3.0 + continuousWave * 0.25).toFixed(2);
+            newTemp = +(76.0 + continuousWave * 1.5).toFixed(1);
+            newDb = 86 + Math.round(continuousWave * 4);
           }
 
           let status = m.status;

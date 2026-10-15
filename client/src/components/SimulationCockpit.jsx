@@ -1,34 +1,29 @@
 import React, { useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 
-export const SimulationCockpit = ({ onTriggerScenario, isConnected = true, embedded = true }) => {
+export const SimulationCockpit = ({ onTriggerScenario, isConnected = true }) => {
   const [activeScenario, setActiveScenario] = useState(null);
-  const [feedbackMsg, setFeedbackMsg] = useState('Cockpit ready.');
   const [loadingAction, setLoadingAction] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const handleAction = async (scenarioKey, label) => {
+  const handleAction = async (scenarioKey) => {
     try {
+      setErrorMessage(null);
       setLoadingAction(scenarioKey);
       setActiveScenario(scenarioKey);
-      setFeedbackMsg(`${label}...`);
-      
-      const res = await onTriggerScenario(scenarioKey);
-      if (res?.message) {
-        setFeedbackMsg(res.message);
-      } else {
-        setFeedbackMsg(`Applied: ${label}`);
-      }
+      await onTriggerScenario(scenarioKey);
     } catch (err) {
-      setFeedbackMsg(`Error: ${err.message}`);
+      console.error(`Simulation action error:`, err.message);
+      setErrorMessage(err.message || 'Action failed');
     } finally {
       setLoadingAction(null);
     }
   };
 
   const scenarios = [
-    { key: 'VIBRATION_SPIKE', label: 'Vib Spike 8.6 mm/s', dotColor: '#ef4444', desc: 'ISO 10816 Zone D severe vibration' },
-    { key: 'BEARING_DEFECT', label: 'Bearing Defect 5.2g', dotColor: '#f59e0b', desc: 'Outer race BPFO impact harmonics' },
-    { key: 'RUL_COLLAPSE', label: 'RUL Drop 14h', dotColor: '#dc2626', desc: 'Accelerated fatigue degradation' }
+    { key: 'VIBRATION_SPIKE', label: 'Vib Spike', dotColor: '#ef4444', desc: 'Simulate severe vibration spike (8.6 mm/s)' },
+    { key: 'BEARING_DEFECT', label: 'Bearing Defect', dotColor: '#f59e0b', desc: 'Simulate bearing outer race defect (5.2g)' },
+    { key: 'RUL_COLLAPSE', label: 'RUL Drop', dotColor: '#dc2626', desc: 'Simulate accelerated RUL degradation' }
   ];
 
   return (
@@ -42,34 +37,32 @@ export const SimulationCockpit = ({ onTriggerScenario, isConnected = true, embed
     >
       <div 
         style={{
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 20,
-          padding: '4px 10px',
-          color: '#f1f5f9',
+          background: '#ffffff',
+          border: '1px solid var(--border-color)',
+          borderRadius: 8,
+          padding: '3px 6px',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+          gap: 6,
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
           flexWrap: 'wrap'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 4 }}>
-          <span 
-            style={{ 
-              width: 7, 
-              height: 7, 
-              borderRadius: '50%', 
-              background: isConnected ? '#10b981' : '#f59e0b',
-              boxShadow: isConnected ? '0 0 6px rgba(16, 185, 129, 0.8)' : 'none'
-            }} 
-          />
-          <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.05em', color: '#cbd5e1' }}>
-            SIMULATE FAULTS:
-          </span>
-        </div>
+        {/* Status Dot */}
+        <span 
+          style={{ 
+            width: 7, 
+            height: 7, 
+            borderRadius: '50%', 
+            background: isConnected ? '#10b981' : '#f59e0b',
+            boxShadow: isConnected ? '0 0 6px rgba(16, 185, 129, 0.5)' : 'none',
+            marginLeft: 2,
+            marginRight: 2
+          }} 
+          title={isConnected ? 'Simulator Connected' : 'Connecting to Simulator...'}
+        />
 
-        {/* Quick Trigger Pills */}
+        {/* Action Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {scenarios.map((sc) => {
             const isLoading = loadingAction === sc.key;
@@ -78,17 +71,17 @@ export const SimulationCockpit = ({ onTriggerScenario, isConnected = true, embed
             return (
               <button
                 key={sc.key}
-                onClick={() => handleAction(sc.key, sc.label)}
+                onClick={() => handleAction(sc.key)}
                 disabled={!!loadingAction}
                 title={sc.desc}
                 style={{
-                  background: isActive ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.06)',
-                  border: `1px solid ${isActive ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.12)'}`,
-                  borderRadius: 12,
-                  padding: '3px 8px',
-                  color: isActive ? '#ffffff' : '#cbd5e1',
-                  fontSize: '0.72rem',
-                  fontWeight: 500,
+                  background: isActive ? '#f1f5f9' : '#ffffff',
+                  border: `1px solid ${isActive ? '#94a3b8' : 'var(--border-color)'}`,
+                  borderRadius: 6,
+                  padding: '4px 9px',
+                  color: isActive ? '#0f172a' : '#334155',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
                   cursor: loadingAction ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -98,8 +91,8 @@ export const SimulationCockpit = ({ onTriggerScenario, isConnected = true, embed
               >
                 <span 
                   style={{ 
-                    width: 5, 
-                    height: 5, 
+                    width: 6, 
+                    height: 6, 
                     borderRadius: '50%', 
                     background: sc.dotColor 
                   }} 
@@ -109,49 +102,35 @@ export const SimulationCockpit = ({ onTriggerScenario, isConnected = true, embed
             );
           })}
 
-          {/* Reset Button */}
+          {/* Reset Fleet Button */}
           <button
-            onClick={() => handleAction('RESET', 'Reset Fleet')}
+            onClick={() => handleAction('RESET')}
             disabled={!!loadingAction}
-            title="Restore all machines to nominal healthy baseline (RUL ≥ 1,200h, health ≥ 95%)"
+            title="Restore all machines to nominal healthy baseline"
             style={{
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.35)',
-              borderRadius: 12,
-              padding: '3px 9px',
-              color: '#34d399',
-              fontSize: '0.72rem',
+              background: '#ecfdf5',
+              border: '1px solid #a7f3d0',
+              borderRadius: 6,
+              padding: '4px 10px',
+              color: '#065f46',
+              fontSize: '0.74rem',
               fontWeight: 600,
               cursor: loadingAction ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 5,
               transition: 'all 0.15s ease'
             }}
           >
-            <RotateCcw size={11} />
+            <RotateCcw size={12} />
             <span>Reset Fleet</span>
           </button>
         </div>
 
-        {/* Status Ticker */}
-        {feedbackMsg && (
-          <div 
-            style={{ 
-              maxWidth: 220, 
-              overflow: 'hidden', 
-              textOverflow: 'ellipsis', 
-              whiteSpace: 'nowrap',
-              fontSize: '0.68rem',
-              color: '#94a3b8',
-              fontFamily: 'monospace',
-              paddingLeft: 6,
-              borderLeft: '1px solid rgba(255, 255, 255, 0.1)'
-            }}
-            title={feedbackMsg}
-          >
-            {feedbackMsg}
-          </div>
+        {errorMessage && (
+          <span style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 600, paddingLeft: 4 }}>
+            {errorMessage}
+          </span>
         )}
       </div>
     </aside>

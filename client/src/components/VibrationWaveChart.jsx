@@ -26,13 +26,13 @@ export const VibrationWaveChart = ({
         if (res.success && isMounted && Array.isArray(res.data) && res.data.length > 0) {
           setTelemetryHistory(res.data);
         } else if (isMounted) {
-          // If no history exists yet, generate mock seed baseline
-          const mockSeed = Array.from({ length: 20 }, (_, i) => ({
-            timestamp: new Date(Date.now() - (20 - i) * 3000).toISOString(),
+          // If no history exists yet, generate clean continuous baseline
+          const mockSeed = Array.from({ length: 25 }, (_, i) => ({
+            timestamp: new Date(Date.now() - (25 - i) * 1000).toISOString(),
             machineId: targetMachineId,
-            vibrationRms: +(1.7 + Math.sin(i * 0.4) * 0.35 + (Math.random() - 0.5) * 0.15).toFixed(2),
+            vibrationRms: +(1.8 + Math.sin(i * 0.3) * 0.28).toFixed(2),
             tempC: 52.0,
-            bearingPeakG: 0.8
+            bearingPeakG: 0.85
           }));
           setTelemetryHistory(mockSeed);
         }
@@ -47,12 +47,21 @@ export const VibrationWaveChart = ({
     return () => { isMounted = false; };
   }, [targetMachineId]);
 
-  // Append live telemetry when machine updates via WebSocket or stream
+  // Smoothly append new live readings to maintain continuous wave without shrinking buffer
   useEffect(() => {
-    if (Array.isArray(liveStream) && liveStream.length > 0) {
-      setTelemetryHistory(liveStream);
-    }
-  }, [liveStream]);
+    if (!Array.isArray(liveStream) || liveStream.length === 0) return;
+    const newest = liveStream[liveStream.length - 1];
+    if (!newest || newest.machineId !== targetMachineId) return;
+
+    setTelemetryHistory(prev => {
+      if (!prev || prev.length === 0) return [newest];
+      const last = prev[prev.length - 1];
+      if (last && ((last._id != null && last._id === newest._id) || last.timestamp === newest.timestamp)) {
+        return prev;
+      }
+      return [...prev.slice(-29), newest];
+    });
+  }, [liveStream, targetMachineId]);
 
   // Chart dimensions matching Hydrogen project exactly
   const width = 640;
@@ -61,20 +70,21 @@ export const VibrationWaveChart = ({
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
 
-  // Compute Adaptive Scales (Auto-Zoom prevents flat lines)
+  // Compute Stable Scales (Stable rounded steps prevent jarring scale jumps)
   const vibrations = telemetryHistory.map(d => d.vibrationRms ?? 1.8);
   const dataMin = vibrations.length > 0 ? Math.min(...vibrations) : (targetMachine?.currentVibrationRms || 1.8);
   const dataMax = vibrations.length > 0 ? Math.max(...vibrations) : (targetMachine?.currentVibrationRms || 1.8);
 
   let minV, maxV;
   if (zoomMode === 'auto') {
-    const span = Math.max(0.6, dataMax - dataMin);
-    minV = Math.max(0, +(dataMin - span * 0.35).toFixed(2));
-    maxV = +(dataMax + span * 0.35).toFixed(2);
+    const targetMin = Math.max(0, dataMin - 0.6);
+    const targetMax = Math.max(targetMin + 3.0, dataMax + 0.6);
+    minV = Math.floor(targetMin * 2) / 2;
+    maxV = Math.ceil(targetMax * 2) / 2;
   } else {
     // Full scale 0 to 10 mm/s
     minV = 0;
-    maxV = Math.max(8.0, Math.ceil(dataMax + 1.0));
+    maxV = Math.max(10.0, Math.ceil(dataMax + 1.0));
   }
 
   if (maxV <= minV) maxV = minV + 2;

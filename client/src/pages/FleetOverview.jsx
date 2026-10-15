@@ -182,7 +182,6 @@ export const FleetOverview = ({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#059669', fontWeight: 600 }}>✓ All {machines.length} machines operating within normal thresholds.</span>
-              <span style={{ fontSize: '0.8rem' }}>Use the simulation controls above to inject faults and verify predictive alerts in real time.</span>
             </div>
           </div>
         )}
