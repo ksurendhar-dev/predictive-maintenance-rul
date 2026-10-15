@@ -600,10 +600,21 @@ router.patch('/work-orders/:id/complete', async (req, res) => {
 
 router.patch('/work-orders/:id', async (req, res) => {
   try {
+    if (req.body.status === 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Use PATCH /api/work-orders/:id/complete to resolve equipment alerts and complete a work order.'
+      });
+    }
+    const allowed = ['title', 'priority', 'status', 'assignedTeam', 'scheduledDate', 'estimatedDowntimeHours', 'partsRequired', 'notes'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
     const wo = await MaintenanceAction.findOneAndUpdate(
       { workOrderId: req.params.id },
-      { $set: req.body },
-      { new: true }
+      { $set: update },
+      { new: true, runValidators: true }
     );
     if (!wo) return res.status(404).json({ success: false, message: 'Work order not found' });
     res.json({ success: true, data: wo });

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X, Wrench, Send } from 'lucide-react';
 
-export const WorkOrderModal = ({ machines, onClose, onSubmit }) => {
+export const WorkOrderModal = ({ machines, preselectedMachineId, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    machineId: machines[0]?.machineId || '',
+    machineId: preselectedMachineId || machines[0]?.machineId || '',
     title: '',
     priority: 'HIGH',
     assignedTeam: 'Precision Vibration & Reliability Team',

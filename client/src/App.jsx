@@ -49,7 +49,8 @@ export default function App() {
     loadData();
 
     // Setup Socket.IO connection
-    const socket = io('/', {
+    const socketUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '') || '/';
+    const socket = io(socketUrl, {
       transports: ['websocket', 'polling']
     });
 
@@ -117,6 +118,7 @@ export default function App() {
       socket.off('work-order:new');
       socket.off('work-order:completed');
       socket.off('overview:update');
+      socket.disconnect();
     };
   }, []);
 

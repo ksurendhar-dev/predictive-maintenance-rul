@@ -69,7 +69,7 @@ export const TelemetryTrends = ({ machines = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {telemetry.slice(0, 10).map((t, idx) => (
+              {telemetry.slice(-10).reverse().map((t, idx) => (
                 <tr key={idx}>
                   <td className="mono" style={{ fontSize: '0.78rem' }}>
                     {new Date(t.timestamp).toLocaleTimeString()}

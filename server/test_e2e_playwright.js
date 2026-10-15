@@ -18,13 +18,17 @@ async function run() {
   });
   const page = await context.newPage();
 
-  console.log('1. Navigating to http://localhost:3003...');
-  await page.goto('http://localhost:3003', { waitUntil: 'networkidle' });
+  const targetUrl = process.env.TEST_URL || 'http://localhost:3003';
+  console.log(`1. Navigating to ${targetUrl}...`);
+  await page.goto(targetUrl, { waitUntil: 'networkidle' });
 
   const title = await page.title();
   console.log('Page Title:', title);
 
-  const artifactDir = 'C:\\Users\\AVREACH\\.gemini\\antigravity-ide\\brain\\c08ab0ef-ddf6-4d01-8104-c67999f8ef45';
+  const artifactDir = process.env.SCREENSHOT_DIR || path.join(__dirname, '../docs/screenshots');
+  if (!fs.existsSync(artifactDir)) {
+    fs.mkdirSync(artifactDir, { recursive: true });
+  }
   
   // Reset fleet first for a clean baseline
   console.log('0. Resetting fleet via Cockpit for clean baseline...');

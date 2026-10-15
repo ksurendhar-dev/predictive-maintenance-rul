@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Machine = require('../models/Machine');
 const TelemetryReading = require('../models/TelemetryReading');
 const AnomalyAlert = require('../models/AnomalyAlert');
@@ -10,6 +11,7 @@ const startTelemetrySimulator = (io) => {
 
   setInterval(async () => {
     try {
+      if (mongoose.connection.readyState !== 1) return;
       const machines = await Machine.find();
       if (!machines || machines.length === 0) return;
 
@@ -17,7 +19,9 @@ const startTelemetrySimulator = (io) => {
       const updatedMachines = [];
 
       for (const m of machines) {
-        const seed = m.machineId.charCodeAt(m.machineId.length - 1);
+        const seed = (m.machineId && typeof m.machineId === 'string')
+          ? m.machineId.charCodeAt(m.machineId.length - 1)
+          : 42;
         const wave = Math.sin(simTick + seed);
         const noise = (Math.random() - 0.5);
 

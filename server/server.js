@@ -3,6 +3,9 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 require('dotenv').config();
 
 const apiRoutes = require('./routes/api');
@@ -40,30 +43,47 @@ io.on('connection', (socket) => {
   });
 });
 
+
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io') || req.path.startsWith('/health')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
 const PORT = process.env.PORT || 5003;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/predictive_maintenance';
 
-const startServer = async () => {
+let simulatorStarted = false;
+const connectDatabase = async () => {
   try {
-    console.log(`Connecting to MongoDB at: ${MONGO_URI}`);
+    console.log('Connecting to MongoDB database...');
     await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000
+      serverSelectionTimeoutMS: 8000
     });
     console.log('Connected to MongoDB successfully.');
 
     await seedDatabase();
-    startTelemetrySimulator(io);
-
-    server.listen(PORT, () => {
-      console.log(`Predictive Maintenance Server listening on port ${PORT}`);
-    });
+    if (!simulatorStarted) {
+      startTelemetrySimulator(io);
+      simulatorStarted = true;
+    }
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
-    startTelemetrySimulator(io);
-    server.listen(PORT, () => {
-      console.log(`Predictive Maintenance Server listening (offline fallback) on port ${PORT}`);
-    });
+    console.log('Retrying MongoDB connection in 10 seconds...');
+    setTimeout(connectDatabase, 10000);
   }
+};
+
+const startServer = () => {
+  connectDatabase();
+  server.listen(PORT, () => {
+    console.log(`Predictive Maintenance Server listening on port ${PORT}`);
+  });
 };
 
 startServer();
