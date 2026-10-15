@@ -5,6 +5,8 @@ import { StatusBadge } from '../components/StatusBadge';
 import { VibrationWaveChart } from '../components/VibrationWaveChart';
 import { SimulationCockpit } from '../components/SimulationCockpit';
 
+const EMPTY_STREAM = [];
+
 export const FleetOverview = ({ 
   overview, 
   machines = [], 
@@ -25,7 +27,9 @@ export const FleetOverview = ({
   const chartMachineId = selectedMachineId || latestAlert?.machineId || (machines.find(m => m.status !== 'HEALTHY')?.machineId) || machines[0]?.machineId;
   const activeMachine = machines.find(m => m.machineId === chartMachineId) || machines[0];
 
-  const currentStream = activeMachine ? (telemetryStream[activeMachine.machineId] || []) : [];
+  const currentStream = (activeMachine && telemetryStream[activeMachine.machineId]) 
+    ? telemetryStream[activeMachine.machineId] 
+    : EMPTY_STREAM;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -189,6 +193,7 @@ export const FleetOverview = ({
         machines={machines}
         selectedMachineId={chartMachineId}
         onSelectMachine={id => setSelectedMachineId(id)}
+        liveStream={currentStream}
       />
 
       {/* 4. Fleet Health Roster Grid */}
@@ -199,7 +204,7 @@ export const FleetOverview = ({
             <span>Equipment Fleet (6 Machines)</span>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-            Live readings updating every 3s — click any machine to focus chart
+            Live readings updating every 1s — click any machine to focus chart
           </span>
         </div>
         <div className="panel-body">

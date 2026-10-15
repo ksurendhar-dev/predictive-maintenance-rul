@@ -49,22 +49,10 @@ export const VibrationWaveChart = ({
 
   // Append live telemetry when machine updates via WebSocket or stream
   useEffect(() => {
-    if (targetMachine && telemetryHistory.length > 0) {
-      const lastPoint = telemetryHistory[telemetryHistory.length - 1];
-      if (Math.abs((lastPoint.vibrationRms || 0) - (targetMachine.currentVibrationRms || 0)) > 0.02) {
-        setTelemetryHistory(prev => [
-          ...prev.slice(-24),
-          {
-            timestamp: new Date().toISOString(),
-            machineId: targetMachine.machineId,
-            vibrationRms: targetMachine.currentVibrationRms,
-            tempC: targetMachine.currentTempC,
-            bearingPeakG: targetMachine.currentBearingPeakG
-          }
-        ]);
-      }
+    if (Array.isArray(liveStream) && liveStream.length > 0) {
+      setTelemetryHistory(liveStream);
     }
-  }, [targetMachine?.currentVibrationRms, targetMachine?.currentTempC]);
+  }, [liveStream]);
 
   // Chart dimensions matching Hydrogen project exactly
   const width = 640;
