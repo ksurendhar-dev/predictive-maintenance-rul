@@ -1,0 +1,129 @@
+================================================================================
+EQUIPMENT HEALTH & MAINTENANCE MONITOR (PREDICTIVE MAINTENANCE & RUL)
+PROJECT OVERVIEW, ARCHITECTURE & REVIEWER DEFENSE MANUAL
+================================================================================
+
+1. SYSTEM PURPOSE & PROBLEM CONTEXT
+--------------------------------------------------------------------------------
+Manufacturing and industrial plants lose 15% to 40% of their operational capacity 
+and incur millions in emergency repair bills due to unexpected machine breakdowns.
+
+Traditional approaches fail:
+- Reactive Maintenance ("Run-to-failure"): Machines break unexpectedly, halting lines.
+- Calendar Maintenance ("Time-based"): Parts are replaced prematurely every 90 days,
+  wasting budget while still missing fast-developing mechanical defects.
+
+The Condition-Based Solution:
+This system continuously analyzes vibration velocity (RMS mm/s) and high-frequency 
+bearing shock impact (Peak-G) across rotating equipment to forecast Remaining Useful 
+Life (RUL) and schedule repairs before catastrophic breakdown occurs.
+
+
+2. ARCHITECTURE & REAL-TIME DATA FLOW
+--------------------------------------------------------------------------------
+[Vibration & Temp Simulator] ---> [Node.js + Express Backend] ---> [MongoDB Engine]
+         (3s Heartbeat)                         |
+                                      (Socket.io WebSockets)
+                                                v
+                                     [React Single-Page App]
+                                      - Simulation Cockpit Bar
+                                      - Smooth Cubic Bezier Spline
+                                      - Equipment Alerts Banner
+                                      - Repairs & Tasks Dispatcher
+                                      - 1-Click Closed Loop Healing
+
+Physical Metrics Monitored Every 3 Seconds:
+- Vibration RMS Velocity (mm/s) [ISO 10816 Limit: 4.5 mm/s]
+- Bearing Crest Peak Impact (g)
+- Stator & Housing Temperature (deg C)
+- Acoustic Emission (dB)
+
+
+3. WHAT IS WHAT (MODULE GUIDE)
+--------------------------------------------------------------------------------
+* SIMULATION COCKPIT:
+  Floating top-right dark minimal bar. Allows live 1-click injection of real plant 
+  scenarios (Vibration Spike 8.6 mm/s, Bearing Defect 5.2g, RUL Drop 14h, Reset Fleet) 
+  so reviewers can see dynamic reactivity in seconds without waiting months for machines 
+  to degrade.
+
+* FLEET OVERVIEW & METRIC CARDS:
+  Aggregated KPI cards: Overall Health (%), Active Alerts (count), Needs Service Soon 
+  (<200h RUL count), and Scheduled Repairs.
+
+* LIVE MACHINE VIBRATION WAVE:
+  Smooth cubic Bezier spline area chart. Features dynamic auto-zoom scaling, machine 
+  dropdown switcher, live pulsing tip beacon, and dashed red warning limit line.
+  Automatically switches to any machine experiencing an active alert.
+
+* EQUIPMENT ALERTS:
+  Real-time anomaly detection with failure mode descriptions (e.g. Spindle Unbalance, 
+  Bearing Flaking, Impeller Cavitation), risk percentage (0-100%), and sensor attribution.
+  Equipped with a green 1-click Resolve button to heal equipment.
+
+* REMAINING USEFUL LIFE (RUL):
+  Prognostic wear countdown showing estimated operating hours remaining with upper 
+  and lower confidence intervals.
+
+* REPAIRS & TASKS:
+  Actionable maintenance dispatch with assigned technician crews, scheduled execution 
+  dates, downtime estimates, and OEM replacement parts kitting.
+
+
+4. 2-MINUTE REVIEWER DEMO SCRIPT
+--------------------------------------------------------------------------------
+Step 1: Open http://localhost:3003 in your browser.
+Step 2: Point to the Overview. Show 6 machines with Overall Health at 96% STABLE, 
+        0 active alerts, and a smooth blue nominal wave oscillating under 4.5 mm/s.
+Step 3: Click "Vib Spike 8.6 mm/s" in the Simulation Cockpit bar.
+        - Overall health drops to 85%.
+        - Active Alerts increments to 1 (1 Critical).
+        - Equipment Alerts banner displays the spindle unbalance failure mode.
+        - The Wave Chart automatically switches to MCH-CNC-501 and turns red.
+Step 4: Click the green "Resolve" button on the alert banner.
+        - The alert clears immediately.
+        - Machine health restores to 96% STABLE.
+        - Wave chart returns to nominal blue.
+Step 5: Navigate to "Repairs & Tasks" and click "Schedule Repair" to show how work 
+        orders are logged with replacement parts kits.
+
+
+5. ANTICIPATED REVIEWER QUESTIONS & SIMPLE ANSWERS
+--------------------------------------------------------------------------------
+Q: What is Remaining Useful Life (RUL)?
+A: RUL is the projected number of operating hours a machine can safely run before 
+   mechanical degradation causes catastrophic failure. It is estimated by tracking 
+   vibration velocity against ISO wear curves.
+
+Q: Why is Vibration RMS the primary metric instead of temperature?
+A: Vibration is a leading indicator. Unbalance or bearing fatigue creates mechanical 
+   vibration days or weeks before friction generates heat. Temperature is a lagging indicator.
+
+Q: What happens under the hood when clicking "Resolve"?
+A: The backend validates if any other unresolved alerts remain for that machine. 
+   If none exist, it resets the machine's baseline in MongoDB (1.8 mm/s, 96% health), 
+   logs a clean telemetry reading, and broadcasts a Socket.io event to update all browsers.
+
+
+6. TRANSPARENT REMAINING WORK (30% PHASE 2 GAP)
+--------------------------------------------------------------------------------
+- Continuous ML Retraining Pipeline: Connecting a Python/FastAPI service with 
+  LSTM/Weibull models trained on external run-to-failure vibration datasets.
+- Enterprise CMMS/ERP Integration: Exporting work orders to SAP PM or IBM Maximo via webhooks.
+- Physical IoT Hardware Stream: Ingesting MQTT / OPC-UA feeds directly from industrial accelerometers.
+
+
+7. HOW TO RUN & TEST
+--------------------------------------------------------------------------------
+Run with Docker:
+  docker compose up -d --build
+  Frontend: http://localhost:3003
+  Backend:  http://localhost:5003
+  Mongo:    localhost:27020
+
+Automated Playwright Browser Verification:
+  cd server
+  node test_e2e_playwright.js
+  (Launches native Google Chrome, tests all 5 scenarios, and saves screenshots to artifacts)
+
+================================================================================
