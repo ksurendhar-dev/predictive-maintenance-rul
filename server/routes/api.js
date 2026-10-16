@@ -4,6 +4,58 @@ const Machine = require('../models/Machine');
 const TelemetryReading = require('../models/TelemetryReading');
 const AnomalyAlert = require('../models/AnomalyAlert');
 const MaintenanceAction = require('../models/MaintenanceAction');
+const User = require('../models/User');
+const { verifyPassword, signToken, requireRole } = require('../utils/auth');
+
+// 0. Authentication & Role-Based Access
+router.post('/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ success: false, message: 'Valid username and password are required.' });
+    }
+
+    const normalizedUsername = username.trim().toLowerCase();
+    const user = await User.findOne({ username: normalizedUsername });
+
+    if (!user || !verifyPassword(password, user.passwordHash)) {
+      return res.status(401).json({ success: false, message: 'Invalid username or password.' });
+    }
+
+    const token = signToken({
+      username: user.username,
+      role: user.role,
+      name: user.name
+    });
+
+    res.json({
+      success: true,
+      token,
+      data: {
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        title: user.title,
+        avatarInitials: user.avatarInitials,
+        permissions: user.permissions
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.get('/auth/demo-users', async (req, res) => {
+  try {
+    const users = await User.find({}, 'username name role title avatarInitials permissions').sort({ role: 1 });
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 // 1. Overview KPIs
 router.get('/overview', async (req, res) => {
@@ -44,7 +96,7 @@ router.get('/overview', async (req, res) => {
 });
 
 // 2. Simulation Scenarios
-router.post('/simulator/scenario', async (req, res) => {
+router.post('/simulator/scenario', requireRole(['ADMIN']), async (req, res) => {
   try {
     const { scenario } = req.body;
     const io = req.app.get('io');
@@ -333,7 +385,7 @@ router.get('/alerts', async (req, res) => {
   }
 });
 
-router.patch('/alerts/:id/acknowledge', async (req, res) => {
+router.patch('/alerts/:id/acknowledge', requireRole(['ADMIN', 'TECHNICIAN']), async (req, res) => {
   try {
     const alert = await AnomalyAlert.findOneAndUpdate(
       { alertId: req.params.id },
@@ -351,7 +403,7 @@ router.patch('/alerts/:id/acknowledge', async (req, res) => {
   }
 });
 
-router.patch('/alerts/:id/resolve', async (req, res) => {
+router.patch('/alerts/:id/resolve', requireRole(['ADMIN', 'TECHNICIAN']), async (req, res) => {
   try {
     const alert = await AnomalyAlert.findOneAndUpdate(
       { alertId: req.params.id },
@@ -445,7 +497,7 @@ router.patch('/alerts/:id/resolve', async (req, res) => {
   }
 });
 
-router.post('/alerts', async (req, res) => {
+router.post('/alerts', requireRole(['ADMIN', 'TECHNICIAN']), async (req, res) => {
   try {
     const { machineId, severity, failureMode, recommendedAction } = req.body;
     const machine = await Machine.findOne({ machineId });
@@ -493,7 +545,7 @@ router.get('/work-orders', async (req, res) => {
   }
 });
 
-router.post('/work-orders', async (req, res) => {
+router.post('/work-orders', requireRole(['ADMIN', 'TECHNICIAN']), async (req, res) => {
   try {
     const { machineId, title, priority, assignedTeam, scheduledDate, estimatedDowntimeHours, partsRequired, alertId } = req.body;
     const machine = await Machine.findOne({ machineId });
@@ -528,7 +580,7 @@ router.post('/work-orders', async (req, res) => {
   }
 });
 
-router.patch('/work-orders/:id/complete', async (req, res) => {
+router.patch('/work-orders/:id/complete', requireRole(['ADMIN', 'TECHNICIAN']), async (req, res) => {
   try {
     const wo = await MaintenanceAction.findOneAndUpdate(
       { workOrderId: req.params.id },
@@ -598,7 +650,7 @@ router.patch('/work-orders/:id/complete', async (req, res) => {
   }
 });
 
-router.patch('/work-orders/:id', async (req, res) => {
+router.patch('/work-orders/:id', requireRole(['ADMIN', 'TECHNICIAN']), async (req, res) => {
   try {
     if (req.body.status === 'COMPLETED') {
       return res.status(400).json({

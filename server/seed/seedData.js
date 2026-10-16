@@ -3,12 +3,55 @@ const Machine = require('../models/Machine');
 const TelemetryReading = require('../models/TelemetryReading');
 const AnomalyAlert = require('../models/AnomalyAlert');
 const MaintenanceAction = require('../models/MaintenanceAction');
+const User = require('../models/User');
+const { hashPassword } = require('../utils/auth');
+
+const seedUsers = async () => {
+  const userCount = await User.countDocuments();
+  if (userCount === 0) {
+    console.log('Seeding role-based access demo users...');
+    const defaultHash = hashPassword('password123');
+    const users = [
+      {
+        username: 'admin',
+        passwordHash: defaultHash,
+        name: 'Dr. Elena Vance',
+        role: 'ADMIN',
+        title: 'Lead Reliability Engineer',
+        avatarInitials: 'EV',
+        permissions: ['ALL', 'SIMULATE_FAULTS', 'SCHEDULE_REPAIRS', 'RESOLVE_ALERTS', 'MANAGE_FLEET']
+      },
+      {
+        username: 'tech',
+        passwordHash: defaultHash,
+        name: 'Marcus Brody',
+        role: 'TECHNICIAN',
+        title: 'Senior Maintenance Specialist',
+        avatarInitials: 'MB',
+        permissions: ['SCHEDULE_REPAIRS', 'RESOLVE_ALERTS', 'VIEW_DIAGNOSTICS']
+      },
+      {
+        username: 'operator',
+        passwordHash: defaultHash,
+        name: 'Sarah Chen',
+        role: 'OPERATOR',
+        title: 'Operations Floor Lead',
+        avatarInitials: 'SC',
+        permissions: ['VIEW_OVERVIEW', 'VIEW_TELEMETRY', 'VIEW_ALERTS']
+      }
+    ];
+    await User.insertMany(users);
+    console.log('Role-based demo users seeded successfully.');
+  }
+};
 
 const seedDatabase = async () => {
   try {
+    await seedUsers();
+
     const count = await Machine.countDocuments();
     if (count > 0) {
-      console.log('Predictive Maintenance database already seeded.');
+      console.log('Predictive Maintenance fleet already seeded.');
       return;
     }
 

@@ -8,11 +8,21 @@ import { RULPredictions } from './pages/RULPredictions';
 import { AnomalyAlerts } from './pages/AnomalyAlerts';
 import { WorkOrders } from './pages/WorkOrders';
 import { TelemetryTrends } from './pages/TelemetryTrends';
+import { LoginPage } from './pages/LoginPage';
 import { WorkOrderModal } from './components/WorkOrderModal';
 import { AnomalyExplainModal } from './components/AnomalyExplainModal';
 import { api } from './services/api';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('predictive_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [overview, setOverview] = useState(null);
   const [machines, setMachines] = useState([]);
@@ -187,6 +197,29 @@ export default function App() {
     setShowWorkOrderModal(true);
   };
 
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('predictive_user', JSON.stringify(user));
+    } catch (e) {
+      console.error('Failed to save session:', e);
+    }
+  };
+
+  const handleSignOut = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('predictive_user');
+      localStorage.removeItem('predictive_token');
+    } catch (e) {
+      console.error('Failed to clear session:', e);
+    }
+  };
+
+  if (!currentUser) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
   const activeAlertCount = alerts.filter(a => a.status !== 'RESOLVED').length;
   const criticalRulCount = machines.filter(m => m.predictedRulHours <= 200).length;
 
@@ -197,6 +230,7 @@ export default function App() {
         setCurrentTab={setCurrentTab}
         alertCount={activeAlertCount}
         criticalRulCount={criticalRulCount}
+        currentUser={currentUser}
       />
 
       <div className="main-wrapper">
@@ -210,6 +244,8 @@ export default function App() {
             'Live Sensor Charts'
           }
           onOpenWorkOrderModal={() => setShowWorkOrderModal(true)}
+          currentUser={currentUser}
+          onSignOut={handleSignOut}
         />
 
         <main className="content-body">
@@ -224,6 +260,7 @@ export default function App() {
               onResolveAlert={handleResolveAlert}
               onTriggerScenario={handleTriggerScenario}
               isConnected={isConnected}
+              currentUser={currentUser}
             />
           )}
 

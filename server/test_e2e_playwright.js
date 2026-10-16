@@ -30,6 +30,24 @@ async function run() {
     fs.mkdirSync(artifactDir, { recursive: true });
   }
   
+  // Handle Login if rendered
+  const signInBtn = await page.getByRole('button', { name: /Sign In/i });
+  if (signInBtn && await signInBtn.isVisible()) {
+    console.log('0. Detected Role-Based Login Page. Clicking Quick Fill-In for Reliability Engineer...');
+    const adminFill = page.getByRole('button', { name: /@admin/i });
+    if (await adminFill.count() > 0) {
+      await adminFill.click();
+      await page.waitForTimeout(300);
+    }
+    const screenLogin = path.join(artifactDir, 'predictive_login.png');
+    await page.screenshot({ path: screenLogin });
+    console.log('Screenshot 0 captured: predictive_login.png');
+
+    await signInBtn.click();
+    await page.waitForSelector('h1.page-heading', { timeout: 6000 });
+    console.log('Signed in successfully as Reliability Engineer (ADMIN).');
+  }
+
   // Reset fleet first for a clean baseline
   console.log('0. Resetting fleet via Cockpit for clean baseline...');
   const resetBtn = await page.getByRole('button', { name: /Reset Fleet/i });

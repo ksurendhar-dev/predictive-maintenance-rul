@@ -9,7 +9,7 @@ import {
   Activity 
 } from 'lucide-react';
 
-export const Sidebar = ({ currentTab, setCurrentTab, alertCount = 0, criticalRulCount = 0 }) => {
+export const Sidebar = ({ currentTab, setCurrentTab, alertCount = 0, criticalRulCount = 0, currentUser }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'machines', label: 'Machines', icon: Cpu },
@@ -54,8 +54,38 @@ export const Sidebar = ({ currentTab, setCurrentTab, alertCount = 0, criticalRul
       </nav>
 
       <div className="sidebar-footer">
-        <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>System Active</div>
-        <div>6 Machines Monitored</div>
+        {currentUser ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: currentUser.role === 'ADMIN' ? '#ea580c' : currentUser.role === 'TECHNICIAN' ? '#0284c7' : '#059669',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              flexShrink: 0
+            }}>
+              {currentUser.avatarInitials || (currentUser.name || currentUser.username || '?').slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {currentUser.name}
+              </div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {currentUser.title || currentUser.role}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: 2 }}>System Active</div>
+            <div>6 Machines Monitored</div>
+          </>
+        )}
       </div>
     </aside>
   );

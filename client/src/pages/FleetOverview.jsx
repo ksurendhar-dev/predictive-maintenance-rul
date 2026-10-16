@@ -16,7 +16,8 @@ export const FleetOverview = ({
   onOpenWorkOrderModal,
   onResolveAlert,
   onTriggerScenario,
-  isConnected = true
+  isConnected = true,
+  currentUser
 }) => {
   const [selectedMachineId, setSelectedMachineId] = useState(null);
 
@@ -98,12 +99,17 @@ export const FleetOverview = ({
             </span>
           </div>
 
-          {/* Embedded Simulation Cockpit Bar next to the alert system */}
-          <SimulationCockpit 
-            onTriggerScenario={onTriggerScenario} 
-            isConnected={isConnected} 
-            embedded={true} 
-          />
+          {/* Embedded Simulation Cockpit Bar or Role Notice */}
+          {(!currentUser || currentUser.role === 'ADMIN') ? (
+            <SimulationCockpit 
+              onTriggerScenario={onTriggerScenario} 
+              isConnected={isConnected} 
+            />
+          ) : (
+            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+              {currentUser.role === 'TECHNICIAN' ? 'Technician Mode · Service Operations' : 'Operator Mode · Live Telemetry Only'}
+            </span>
+          )}
         </div>
 
         {openAlerts.length > 0 ? (
@@ -145,24 +151,26 @@ export const FleetOverview = ({
                           <ChevronRight size={12} />
                         </button>
 
-                        <button 
-                          className="btn btn-sm"
-                          onClick={() => onResolveAlert && onResolveAlert(alert.alertId)}
-                          style={{ 
-                            padding: '5px 10px', 
-                            fontSize: '0.75rem', 
-                            background: '#059669', 
-                            color: '#ffffff', 
-                            border: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
-                          title="Resolve alert and restore nominal machine baseline"
-                        >
-                          <Check size={12} />
-                          <span>Resolve</span>
-                        </button>
+                        {(!currentUser || currentUser.role !== 'OPERATOR') && (
+                          <button 
+                            className="btn btn-sm"
+                            onClick={() => onResolveAlert && onResolveAlert(alert.alertId)}
+                            style={{ 
+                              padding: '5px 10px', 
+                              fontSize: '0.75rem', 
+                              background: '#059669', 
+                              color: '#ffffff', 
+                              border: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}
+                            title="Resolve alert and restore nominal machine baseline"
+                          >
+                            <Check size={12} />
+                            <span>Resolve</span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -298,17 +306,19 @@ export const FleetOverview = ({
                       {isSelected ? '● Focused on Wave Chart' : 'Click to Focus Chart'}
                     </span>
 
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenWorkOrderModal && onOpenWorkOrderModal(m.machineId);
-                      }}
-                      style={{ fontSize: '0.72rem', padding: '3px 8px' }}
-                    >
-                      <WrenchIcon size={11} />
-                      <span>Schedule Repair</span>
-                    </button>
+                    {(!currentUser || currentUser.role !== 'OPERATOR') && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenWorkOrderModal && onOpenWorkOrderModal(m.machineId);
+                        }}
+                        style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                      >
+                        <WrenchIcon size={11} />
+                        <span>Schedule Repair</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
